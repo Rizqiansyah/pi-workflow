@@ -9,10 +9,15 @@ set -euo pipefail
 
 WF_PIXI="${WF_PIXI:-$HOME/.pi/agent/workflow/.pixi}"
 
-if [[ ! -x "$WF_PIXI/bin/python" ]]; then
-  echo "pwf: workflow pixi env not found at $WF_PIXI/bin/python" >&2
+# pixi >= 0.61 uses .pixi/envs/default/bin; older pixi used .pixi/bin
+if [[ -x "$WF_PIXI/envs/default/bin/python" ]]; then
+  PYTHON="$WF_PIXI/envs/default/bin/python"
+elif [[ -x "$WF_PIXI/bin/python" ]]; then
+  PYTHON="$WF_PIXI/bin/python"
+else
+  echo "pwf: workflow pixi env not found under $WF_PIXI" >&2
   echo "pwf: run 'cd ~/.pi/agent/workflow && pixi install' first" >&2
   exit 127
 fi
 
-exec "$WF_PIXI/bin/python" "$@"
+exec "$PYTHON" "$@"

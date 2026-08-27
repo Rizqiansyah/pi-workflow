@@ -41,7 +41,7 @@ if [[ -d "$HOME/.local/bin" ]] && [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; the
 fi
 
 # pixi env for the pwf shim (validator runs under it); skip if env present
-if [[ ! -x "$AGENT_DIR/workflow/.pixi/bin/python" ]]; then
+if [[ ! -x "$AGENT_DIR/workflow/.pixi/envs/default/bin/python" && ! -x "$AGENT_DIR/workflow/.pixi/bin/python" ]]; then
   cp "$SRC/pixi.toml" "$AGENT_DIR/workflow/pixi.toml"
   (cd "$AGENT_DIR/workflow" && pixi install) || echo "   WARNING: pixi install failed; run manually in ~/.pi/agent/workflow"
 fi
