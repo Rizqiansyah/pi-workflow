@@ -63,6 +63,25 @@ fs.writeFileSync(path, JSON.stringify(cur, null, 2) + "\n");
 console.log("   merged providers:", Object.keys(cur.providers).join(", "));
 ' "$AGENT_DIR" "$SRC"
 
+echo "== default model (pinned in settings.json) =="
+node -e '
+const fs = require("fs");
+const agentDir = process.argv[1];
+const p = agentDir + "/settings.json";
+let cur = {};
+try { cur = JSON.parse(fs.readFileSync(p, "utf8")); } catch {}
+// Pin the local model so pi -p and every subagent child resolve to it
+// instead of a built-in cloud default (which may be 402/credit-gated).
+if (cur.defaultProvider !== "vllm-local" || cur.defaultModel !== "kv520") {
+  cur.defaultProvider = "vllm-local";
+  cur.defaultModel = "kv520";
+  fs.writeFileSync(p, JSON.stringify(cur, null, 2) + "\n");
+  console.log("   pinned defaultProvider=vllm-local defaultModel=kv520");
+} else {
+  console.log("   already pinned");
+}
+' "$AGENT_DIR"
+
 echo "== global AGENTS.md (append-only) =="
 if [[ -f "$AGENT_DIR/AGENTS.md" ]] && grep -q "Python must use pixi" "$AGENT_DIR/AGENTS.md"; then
   echo "   already present, skipped"
