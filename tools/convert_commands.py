@@ -91,9 +91,11 @@ def main():
             "Subagent dispatch in this workflow: every reference to a subagent (e.g. the subagent "
             "\"milestone-planner\") means a call to the subagent tool with that agent name and a "
             "self-contained task prompt (objective, source materials, current state, exact scope, "
-            "constraints, expected output, completion requirements). The subagent tool returns "
-            "the subagent's final text, usage stats, and tool-call trace. Accept a subagent's "
-            "completion only per the sentinel and mechanical gates below; retry/replace/stop per policy.\n\n"
+            "constraints, expected output, completion requirements). Always pass "
+            "agentScope: \"both\" so project-local agents in .pi/agents are visible. The subagent "
+            "tool returns the subagent's final text, usage stats, and tool-call trace. Accept a "
+            "subagent's completion only per the sentinel and mechanical gates below; "
+            "retry/replace/stop per policy.\n\n"
             "---\n\n"
         )
         out = (

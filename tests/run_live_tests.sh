@@ -169,7 +169,7 @@ echo "### T7: pixi-block is active inside (subagent-equivalent) pi child process
 # T7a reproduces the child environment deterministically.
 out=$(cd /tmp && timeout 120 pi -p --mode json --tools bash --no-session "Run this bash command: python3 --version. Then reply with one word: done." 2>&1)
 c=1; echo "$out" | grep -q "deliberately disabled" && c=0; check "T7a python3 blocked in bash-only pi process" $c
-c=1; echo "$out" | grep -q "Python 3\." && c=0; check "T7a python3 did not actually run" $c
+c=1; ! echo "$out" | grep -q "Python 3\." && c=0; check "T7a python3 did not actually run" $c
 sleep "$SETTLE"
 # T7b: through the real subagent tool path — the child reports the block in its
 # final text, which IS relayed to the parent.
