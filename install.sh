@@ -49,8 +49,9 @@ fi
 echo "== providers (merged into models.json) =="
 node -e '
 const fs = require("fs");
-const path = process.env.AGENT_DIR + "/models.json";
-const src = process.env.SRC + "/providers.json";
+const [agentDir, srcDir] = process.argv.slice(1);
+const path = agentDir + "/models.json";
+const src = srcDir + "/providers.json";
 let cur = {};
 try { cur = JSON.parse(fs.readFileSync(path, "utf8")); } catch {}
 const add = JSON.parse(fs.readFileSync(src, "utf8"));
@@ -60,7 +61,7 @@ for (const [k, v] of Object.entries(add.providers)) {
 }
 fs.writeFileSync(path, JSON.stringify(cur, null, 2) + "\n");
 console.log("   merged providers:", Object.keys(cur.providers).join(", "));
-' AGENT_DIR="$AGENT_DIR" SRC="$SRC"
+' "$AGENT_DIR" "$SRC"
 
 echo "== global AGENTS.md (append-only) =="
 if [[ -f "$AGENT_DIR/AGENTS.md" ]] && grep -q "Python must use pixi" "$AGENT_DIR/AGENTS.md"; then
