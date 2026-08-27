@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 # Install the pi milestone workflow: subagent extension, agents, prompt
-# templates, supporting files, and local providers.
+# templates, supporting files (as a git checkout, so `describe --tags`
+# resolves the workflow version), and local providers.
 #
-# Everything is additive; existing ~/.pi/agent content is preserved:
-#   - extensions/subagent/           (this repo's pi-ext/)
-#   - agents/*.md                    (this repo's agents/)
-#   - prompts/milestone-*.md         (this repo's prompts/)
-#   - workflow/support|docs|bin      (validators + format guide + pwf shim)
-#   - models.json                    (merged: vllm-local + llm-router added)
-#   - AGENTS.md                      (appended if absent, never overwritten)
+# Everything is additive; existing ~/.pi/agent content is preserved.
 set -euo pipefail
 
+AGENT_DIR="${PI_AGENT_DIR:-$HOME/.pi/agent}"
 SRC="$(cd "$(dirname "$0")" && pwd)"
-AGENT_DIR="${HOME}/.pi/agent"
+WF_TAG="wf-pi-v0.1.0"
+
 mkdir -p "$AGENT_DIR"
 
 echo "== subagent extension =="
@@ -23,27 +20,45 @@ cp "$SRC/pi-ext/agents.ts" "$AGENT_DIR/extensions/subagent/agents.ts"
 echo "== agents =="
 mkdir -p "$AGENT_DIR/agents"
 cp "$SRC"/agents/*.md "$AGENT_DIR/agents/"
+echo "   $(ls "$SRC"/agents/*.md | wc -l) agents"
 
 echo "== prompt templates (slash commands) =="
 mkdir -p "$AGENT_DIR/prompts"
 cp "$SRC"/prompts/milestone-*.md "$AGENT_DIR/prompts/"
+echo "   $(ls "$SRC"/prompts/milestone-*.md | wc -l) templates"
 
-echo "== supporting files =="
-mkdir -p "$AGENT_DIR/workflow/support" "$AGENT_DIR/workflow/docs" "$AGENT_DIR/workflow/bin"
-cp "$SRC/support/validate_milestone_docs.py" "$AGENT_DIR/workflow/support/"
-cp "$SRC/docs/MILESTONE_PLANNING_FORMAT_GUIDE.md" "$AGENT_DIR/workflow/docs/"
-cp "$SRC/bin/pwf" "$AGENT_DIR/workflow/bin/"
-chmod +x "$AGENT_DIR/workflow/bin/pwf"
-# make pwf callable on PATH
-if [[ -d "$HOME/.local/bin" ]] && [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
-  ln -sf "$AGENT_DIR/workflow/bin/pwf" "$HOME/.local/bin/pwf"
-  echo "   pwf -> ~/.local/bin/pwf"
+echo "== supporting files (git checkout at $AGENT_DIR/workflow) =="
+# The templates resolve paths like ~/.pi/agent/workflow/{support,docs}/ and
+# the workflow version via `git -C ~/.pi/agent/workflow describe --tags`.
+# So the workflow home must be a git checkout of this repo.
+if [ -d "$AGENT_DIR/workflow/.git" ]; then
+  git -C "$AGENT_DIR/workflow" fetch --quiet origin 2>/dev/null || true
+  git -C "$AGENT_DIR/workflow" reset --hard --quiet origin/master 2>/dev/null \
+    || git -C "$AGENT_DIR/workflow" reset --hard --quiet master
+  git -C "$AGENT_DIR/workflow" tag "$WF_TAG" 2>/dev/null || true
+  echo "   refreshed existing checkout"
+else
+  if [ -e "$AGENT_DIR/workflow" ]; then
+    mv "$AGENT_DIR/workflow" "$AGENT_DIR/workflow.bak.$(date +%s)"
+    echo "   moved existing non-git dir to workflow.bak.*"
+  fi
+  if git -C "$AGENT_DIR/workflow" rev-parse 2>/dev/null; then
+    echo "   (unexpected)"
+  else
+    git clone -q "$SRC" "$AGENT_DIR/workflow"
+    git -C "$AGENT_DIR/workflow" tag "$WF_TAG" 2>/dev/null || true
+    echo "   cloned checkout"
+  fi
 fi
-
 # pixi env for the pwf shim (validator runs under it); skip if env present
 if [[ ! -x "$AGENT_DIR/workflow/.pixi/envs/default/bin/python" && ! -x "$AGENT_DIR/workflow/.pixi/bin/python" ]]; then
-  cp "$SRC/pixi.toml" "$AGENT_DIR/workflow/pixi.toml"
   (cd "$AGENT_DIR/workflow" && pixi install) || echo "   WARNING: pixi install failed; run manually in ~/.pi/agent/workflow"
+fi
+# pwf shim on PATH (also in the checkout at bin/, but PATH copy survives re-clones)
+if [ -d "$HOME/.local/bin" ]; then
+  cp "$SRC/bin/pwf" "$HOME/.local/bin/pwf"
+  chmod +x "$HOME/.local/bin/pwf"
+  echo "   pwf -> ~/.local/bin/pwf"
 fi
 
 echo "== providers (merged into models.json) =="
@@ -90,7 +105,6 @@ elif [[ -f "$AGENT_DIR/AGENTS.md" ]]; then
   echo "   appended"
 else
   cp "$SRC/global-instructions.md" "$AGENT_DIR/AGENTS.md"
-  # strip the header comment lines
   sed -i '1,2d' "$AGENT_DIR/AGENTS.md"
   echo "   created"
 fi
@@ -99,3 +113,4 @@ echo
 echo "installed. Verify with: pi (then /reload in an existing session, or start fresh)"
 echo "   agents:    ls $AGENT_DIR/agents"
 echo "   commands:  /milestone-planning /milestone-implementation /milestone-pr-review"
+echo "   workflow:  $AGENT_DIR/workflow (git tag $WF_TAG)"
