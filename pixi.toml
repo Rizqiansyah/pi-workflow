@@ -1,0 +1,9 @@
+# pixi environment for the pi milestone workflow validator (used by pwf shim)
+[project]
+name = "pi-workflow"
+version = "0.1.0"
+requires-pixi = ">=0.40"
+
+[dependencies]
+
+[feature.test.dependencies]

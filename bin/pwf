@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# pwf — pixi-backed python for the pi milestone workflow.
+#
+# pi's pixi-python-block extension deliberately blocks bare python/python3,
+# so workflow tooling that must run under a pixi-managed interpreter uses
+# this shim instead. It runs python from the workflow's own pixi
+# environment, keeping the "python must use pixi" rule intact.
+set -euo pipefail
+
+WF_PIXI="${WF_PIXI:-$HOME/.pi/agent/workflow/.pixi}"
+
+if [[ ! -x "$WF_PIXI/bin/python" ]]; then
+  echo "pwf: workflow pixi env not found at $WF_PIXI/bin/python" >&2
+  echo "pwf: run 'cd ~/.pi/agent/workflow && pixi install' first" >&2
+  exit 127
+fi
+
+exec "$WF_PIXI/bin/python" "$@"

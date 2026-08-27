@@ -1,0 +1,31 @@
+{
+  "providers": {
+    "vllm-local": {
+      "baseUrl": "http://127.0.0.1:8105/v1",
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        { "id": "kv520" }
+      ]
+    },
+    "llm-router": {
+      "name": "3945WX Router (local)",
+      "baseUrl": "http://127.0.0.1:8082/v1",
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        { "id": "qwen-3.8-27b-q8" },
+        { "id": "Qwen 3.8 27B Q8" },
+        { "id": "Qwen 3.6 27B Coder" }
+      ]
+    }
+  }
+}
