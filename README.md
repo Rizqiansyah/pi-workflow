@@ -40,6 +40,43 @@ Sister projects:
 - External-model agents need credentials: `OPENAI_API_KEY` (gpt-5.6-*), `OPENROUTER_API_KEY` (ox-alpha). Check with `pi auth check --provider openai` / `--provider openrouter`.
 - `senior-implementer` pins `opencode-go/deepseek-v4-pro` — that provider does not exist in pi. It must be repointed (e.g. `deepseek/deepseek-chat` or an OpenRouter route) before that agent works; the rest of the workflow runs without it.
 
+## Operating on the 3945wx box — use 8082, not 8105
+
+This machine's Hermes agent itself is backed by `kv520` on port **8105** (a single-slot
+vLLM server). If pi (or any subagent child) is pointed at 8105, it **self-competes with
+the Hermes session** and both starve — observed: a full planning cycle took 40+ min and
+only 2 dispatches completed on 8105, versus a clean **6-document planning cycle in ~24 min
+on 8082**.
+
+So:
+- Point pi's session and every subagent at the **`llm-router`** provider (port **8082**,
+  model `qwen-3.8-27b-q8`). `implementation` is already pinned there; for a full local run,
+  pin the other agents the same way (see the e2e harness, which rewrites the `model:`
+  frontmatter line to `llm-router/qwen-3.8-27b-q8`).
+- 8082 is a lighter native-262k server, so it is *faster* than the 520k YaRN/FP8-KV kv520
+  AND does not fight the Hermes session. Use 8105/kv520 only if a task genuinely needs the
+  >262k context and the Hermes session is idle.
+
+## Verified end-to-end (local model)
+
+On 2026-08-28 a synthetic one-task milestone (M1 "Greeting CLI") ran `/milestone-planning`
+fully on local `qwen-3.8-27b-q8` (all 8 agents repointed to the local model; no external
+credentials). Result, from the live run:
+- Orchestrator created branch `m1-greeting-cli`, resolved the roadmap + central format
+  guide + workflow version, and delegated only (never drafted documents itself).
+- Planner (subagent) wrote **all 3 planning docs** to disk and committed each
+  (`IMPLEMENTATION_PLAN`, `SPEC_SHEETS`, `AGENT_INSTRUCTIONS`).
+- Plan-reviewer (subagent, read/edit only) wrote **all 3 `_REVIEW.md` files**, each ending
+  in `APPROVED` with its sentinel; the orchestrator ran the mechanical gates after each.
+- Full-mode `validate_milestone_docs.py` reported **0 FAIL, 2 WARN**; the reviewer triaged
+  both WARNs as benign (no parity/benchmark gates declared for M1).
+- Orchestrator's final report listed the 6 files, 4 commits, "Blockers: none", and
+  `agent_settled` fired (1449s).
+
+This proves the pi port orchestrates correctly end-to-end with a local model. It does **not**
+yet prove the external-model agents (gpt-5.6-*, ox-alpha, deepseek) — those need the
+credentials in "Model notes" above before a faithful production run.
+
 ## Install
 
 ```bash
