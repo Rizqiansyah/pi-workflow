@@ -26,10 +26,10 @@ Sister projects:
 
 | Agent | Model | Tools | Notes |
 |---|---|---|---|
-| workflow-orchestrator | current default (kv520) | all | In pi the main session orchestrates; its prompt is prepended to each milestone template. Also available as a subagent. |
+| workflow-orchestrator | session model (use 8082) | all | In pi the main session orchestrates; its prompt is prepended to each milestone template. Also available as a subagent. |
 | milestone-planner | openai/gpt-5.6-sol | all | Writes the 3 planning docs; `[MILESTONE PLAN COMPLETE]` sentinel |
 | milestone-plan-reviewer | openrouter/stealth/ox-alpha (xhigh thinking) | read,edit | Adversarial plan review; `[MILESTONE PLAN REVIEW COMPLETE]` |
-| implementation | current default (kv520 local) | all | Coding agent; `[TASK COMPLETED]` sentinel |
+| implementation | llm-router/qwen-3.8-27b-q8 (8082) | all | Coding agent; `[TASK COMPLETED]` sentinel |
 | senior-implementer | opencode-go/deepseek-v4-pro | all | Escalation coder |
 | phase-reviewer | openai/gpt-5.6-terra | read,edit | Phase review + root-cause mode |
 | glm-milestone-reviewer | openrouter/stealth/ox-alpha (xhigh) | read,edit | Milestone PR review |
